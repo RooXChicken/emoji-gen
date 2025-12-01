@@ -1,0 +1,31 @@
+plugins {
+    id("java")
+    id("groovy")
+    id("com.gradleup.shadow") version "9.0.1"
+}
+
+apply plugin: "com.gradleup.shadow"
+
+group = "org.loveroo.emojigen"
+version = "1.0-SNAPSHOT"
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // https://mvnrepository.com/artifact/net.imagej/ij
+    implementation("net.imagej:ij:1.54p")
+    compileOnly("net.imagej:ij:1.54p")
+}
+
+tasks.withType(JavaCompile).configureEach {
+    it.options.encoding = "UTF-8"
+}
+
+tasks.withType(Jar).configureEach {
+    manifest {
+        attributes["Main-Class"] = "org.loveroo.emojigen.Main"
+        // attributes["Add-Opens"] = "java.desktop/java.awt"
+    }
+}
