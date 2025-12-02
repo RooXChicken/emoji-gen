@@ -1,6 +1,8 @@
 package org.loveroo.emojigen;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.loveroo.emojigen.util.FileUtil;
 
@@ -10,6 +12,8 @@ public class PackWriter {
     
     private static final String FONT_PATH = ASSET_PATH + "/font";
     private static final String TEXTURE_PATH = ASSET_PATH + "/textures/icons";
+
+    private static final String FONT_FILE_PATH = FONT_PATH + "/%s.json";
 
     private static int PACK_VERSION = 64;
 
@@ -22,11 +26,18 @@ public class PackWriter {
     }
     """;
 
-    private String name = "pack";
-    private String description = "emoji pack [ made with love by roo ]";
+    private String name;
+    private String description;
+
+    private final List<Font> fonts = new ArrayList<>();
 
     public PackWriter() {
+        this("pack", "emoji pack [ made with love by roo ]");
+    }
 
+    public PackWriter(String name, String description) {
+        name(name);
+        description(description);
     }
 
     public String name() {
@@ -45,7 +56,17 @@ public class PackWriter {
         this.description = description;
     }
 
-    public void build(String output, Font font) {
+    public List<Font> fonts() {
+        return fonts;
+    }
+
+    public void addFont(Font font) {
+        fonts().add(font);
+    }
+
+    public void build() {
+        final var output = name();
+
         var packFolder = new File(output);
         packFolder.mkdirs();
 
@@ -64,12 +85,14 @@ public class PackWriter {
             )
         );
 
-        final var fontContents = font.build(output);
-
-        FileUtil.writeString(
-            new File(output + FONT_PATH + "/default.json"),
-            fontContents
-        );
+        for(var font : fonts()) {
+            final var fontContents = font.build(output);
+    
+            FileUtil.writeString(
+                new File(output + String.format(FONT_FILE_PATH, font.name())),
+                fontContents
+            );
+        }
     }
 
     public static String texturePath(String output, String name) {

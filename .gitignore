@@ -50,3 +50,4 @@ config.json
 lib/
 assets/
 test/
+infuse-pack/

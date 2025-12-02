@@ -3,6 +3,8 @@ package org.loveroo.emojigen;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.loveroo.emojigen.providers.Provider;
+
 public class Font {
     
     private static final String FONT_BASE = """
@@ -15,10 +17,15 @@ public class Font {
     
     private final List<Provider> providers = new ArrayList<>();
 
+    private String name;
     private int unicodeStart = 0xE000;
 
     public Font() {
+        this("default");
+    }
 
+    public Font(String fontFile) {
+        fontFile(fontFile);
     }
 
     public List<Provider> providers() {
@@ -27,6 +34,14 @@ public class Font {
 
     public void addProvider(Provider provider) {
         providers().add(provider);
+    }
+
+    public String name() {
+        return name;
+    }
+
+    public void fontFile(String fontFile) {
+        this.name = fontFile;
     }
 
     public int unicodeStart() {
@@ -44,7 +59,6 @@ public class Font {
         for(var i = 0; i < providers().size(); i++) {
             final var provider = providers().get(i);
             
-            System.out.println(unicode - unicodeStart());
             final var result = provider.build(output, unicode);
             unicode += result.icons();
 

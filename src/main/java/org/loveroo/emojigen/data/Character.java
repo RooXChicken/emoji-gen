@@ -1,4 +1,4 @@
-package org.loveroo.emojigen;
+package org.loveroo.emojigen.data;
 
 public record Character(int code) {
 

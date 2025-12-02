@@ -1,7 +1,9 @@
-package org.loveroo.emojigen;
+package org.loveroo.emojigen.providers;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import org.loveroo.emojigen.data.Character;
 
 public abstract class Provider {
 
@@ -47,9 +49,7 @@ public abstract class Provider {
 
     public abstract BuildResult build(String output, int unicodeStart);
 
-    protected String buildBase() {
-        final var chars = buildChars();
-
+    protected String buildBase(String chars) {
         return String.format(
             PROVIDER_BASE,
             type().id(),

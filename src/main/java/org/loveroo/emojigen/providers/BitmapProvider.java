@@ -1,4 +1,4 @@
-package org.loveroo.emojigen;
+package org.loveroo.emojigen.providers;
 
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -11,6 +11,10 @@ import java.util.Optional;
 import java.util.regex.Pattern;
 
 import javax.imageio.ImageIO;
+
+import org.loveroo.emojigen.PackWriter;
+import org.loveroo.emojigen.data.Character;
+import org.loveroo.emojigen.util.Pair;
 
 public class BitmapProvider extends Provider {
 
@@ -33,10 +37,6 @@ public class BitmapProvider extends Provider {
 
     private Optional<Integer> height = Optional.empty();
     private Optional<Integer> ascent = Optional.empty();
-
-    private int imageWidth = -1;
-    private int imageHeight = -1;
-    private int megaDimensions = 0;
 
     public BitmapProvider(String name) {
         super(ProviderType.BITMAP);
@@ -82,16 +82,19 @@ public class BitmapProvider extends Provider {
 
     @Override
     public BuildResult build(String output, int unicodeStart) {
+        TextureData textureData;
         try {
-            buildMegaTexture(output, unicodeStart);
+            textureData = buildMegaTexture(output, unicodeStart);
         }
         catch (IOException e) {
             throw new RuntimeException(e);
         }
-        
-        final var base = buildBase();
 
-        final var height = height().orElse(imageHeight);
+        System.out.println(name() + " -> " + unicodeStart);
+        
+        final var base = buildBase(buildBitmapChars(textureData));
+
+        final var height = height().orElse(textureData.height());
         final var ascent = ascent().orElse(height - 1);
 
         final var bitmap = String.format(
@@ -113,8 +116,7 @@ public class BitmapProvider extends Provider {
         );
     }
 
-    @Override
-    protected String buildChars() {
+    protected String buildBitmapChars(TextureData data) {
         final var charBuilder = new StringBuilder();
         charBuilder.append(CHAR_TAB_SIZE);
         charBuilder.append("\"");
@@ -124,7 +126,7 @@ public class BitmapProvider extends Provider {
 
             charBuilder.append(character.build());
             
-            if(i % megaDimensions == megaDimensions - 1 && i != characters().size() - 1) {
+            if(i % data.megaDimensions() == data.megaDimensions() - 1 && i != characters().size() - 1) {
                 charBuilder.append("\",\n");
                 charBuilder.append(CHAR_TAB_SIZE);
                 charBuilder.append("\"");
@@ -140,37 +142,37 @@ public class BitmapProvider extends Provider {
 
         return Arrays.stream(list)
             .sorted((f1, f2) -> {
-                var name1Match = NAME_REGEX.matcher(f1.getName());
-                var name2Match = NAME_REGEX.matcher(f2.getName());
+                // use a custom sort to have numbers ordered properly
+                final var name1Match = NAME_REGEX.matcher(f1.getName());
+                final var name2Match = NAME_REGEX.matcher(f2.getName());
 
                 if(!name1Match.find() || !name2Match.find()) {
                     return f1.getName().compareTo(f2.getName());
                 }
                 
-                var name1 = name1Match.group();
-                var name2 = name2Match.group();
-                // System.out.println(name1);
+                final var name1 = name1Match.group();
+                final var name2 = name2Match.group();
 
                 if(!name1.equalsIgnoreCase(name2)) {
                     return f1.getName().compareTo(f2.getName());
                 }
 
-                var num1Match = NUMBER_SORT_REGEX.matcher(f1.getName());
-                var num2Match = NUMBER_SORT_REGEX.matcher(f2.getName());
+                final var num1Match = NUMBER_SORT_REGEX.matcher(f1.getName());
+                final var num2Match = NUMBER_SORT_REGEX.matcher(f2.getName());
                 
                 if(!num1Match.find() || !num2Match.find()) {
                     return f1.getName().compareTo(f2.getName());
                 }
 
-                var num1 = Integer.parseInt(num1Match.group());
-                var num2 = Integer.parseInt(num2Match.group());
+                final var num1 = Integer.parseInt(num1Match.group());
+                final var num2 = Integer.parseInt(num2Match.group());
 
                 return Integer.compare(num1, num2);
             })
             .toList();
     }
 
-    private void buildMegaTexture(String output, int unicodeStart) throws IOException {
+    protected TextureData buildMegaTexture(String output, int unicodeStart) throws IOException {
         final var loaded = new ArrayList<BufferedImage>();
 
         final var paths = textures();
@@ -182,15 +184,35 @@ public class BitmapProvider extends Provider {
         }
 
         if(loaded.isEmpty()) {
-            return;
+            return new TextureData(0, 0, 0);
         }
 
-        imageWidth = loaded.get(0).getWidth();
-        imageHeight = loaded.get(0).getHeight();
+        final var textureData = createMegaTexture(loaded);
 
-        final var imageCount = loaded.size();
+        final var writer = new FileOutputStream(
+            new File(PackWriter.texturePath(output, name() + ".png"))
+        );
+        
+        ImageIO.write(
+            textureData.first(),
+            "PNG",
+            writer
+        );
 
-        megaDimensions = (int) Math.ceil(Math.sqrt(imageCount));
+        writer.close();
+
+        return textureData.second();
+    }
+
+    public static record TextureData(int width, int height, int megaDimensions) { }
+
+    protected Pair<BufferedImage, TextureData> createMegaTexture(List<BufferedImage> textures) throws IOException {
+        final var imageWidth = textures.get(0).getWidth();
+        final var imageHeight = textures.get(0).getHeight();
+
+        final var imageCount = textures.size();
+
+        final var megaDimensions = (int) Math.ceil(Math.sqrt(imageCount));
         final var glyphCount = Math.pow(megaDimensions, 2);
 
         final var mega = new BufferedImage(
@@ -202,12 +224,12 @@ public class BitmapProvider extends Provider {
         final var canvas = mega.createGraphics();
 
         for(var i = 0; i < glyphCount; i++) {
-            if(i >= loaded.size()) {
+            if(i >= textures.size()) {
                 characters().add(new Character(0));
                 continue;
             }
 
-            var image = loaded.get(i);
+            var image = textures.get(i);
 
             var x = (i % megaDimensions);
             var y = (i / megaDimensions);
@@ -222,16 +244,6 @@ public class BitmapProvider extends Provider {
 
         canvas.dispose();
 
-        final var writer = new FileOutputStream(
-            new File(PackWriter.texturePath(output, name() + ".png"))
-        );
-        
-        ImageIO.write(
-            mega,
-            "PNG",
-            writer
-        );
-
-        writer.close();
+        return new Pair<>(mega, new TextureData(imageWidth, imageHeight, megaDimensions));
     }
 }
