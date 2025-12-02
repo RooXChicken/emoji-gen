@@ -9,14 +9,14 @@ public abstract class Provider {
             {
                 "type": "%s",
                 "chars": [
-                    %s
+    %s
                 ],
-                %s
-            }
-            """;
+    %s
+            }""";
     
     private final ProviderType type;
 
+    private int unicodeOffset = 0;
     private final List<Character> characters = new ArrayList<>();
 
     public Provider(ProviderType type) {
@@ -27,24 +27,39 @@ public abstract class Provider {
         return type;
     }
 
+    public int unicodeOffset() {
+        return unicodeOffset;
+    }
+
+    public void unicodeOffset(int unicodeStart) {
+        this.unicodeOffset = unicodeStart;
+    }
+
     public List<Character> characters() {
         return characters;
     }
 
-    public abstract String build();
+    public int characterCount() {
+        return characters().size();
+    }
+
+    public static record BuildResult(String output, int icons) { }
+
+    public abstract BuildResult build(String output, int unicodeStart);
 
     protected String buildBase() {
-        var chars = buildChars();
+        final var chars = buildChars();
 
         return String.format(
             PROVIDER_BASE,
             type().id(),
-            chars
+            chars,
+            "%s"
         );
     }
 
     protected String buildChars() {
-        var charBuilder = new StringBuilder();
+        final var charBuilder = new StringBuilder();
         charBuilder.append("\"");
 
         for(var character : characters()) {

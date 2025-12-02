@@ -48,3 +48,5 @@ gradle/
 
 config.json
 lib/
+assets/
+test/

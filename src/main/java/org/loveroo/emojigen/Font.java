@@ -6,14 +6,16 @@ import java.util.List;
 public class Font {
     
     private static final String FONT_BASE = """
-            {
-                "providers": [
-                    %s
-                ]
-            }
-            """;
+    {
+        "providers": [
+    %s
+        ]
+    }
+    """;
     
     private final List<Provider> providers = new ArrayList<>();
+
+    private int unicodeStart = 0xE000;
 
     public Font() {
 
@@ -27,13 +29,26 @@ public class Font {
         providers().add(provider);
     }
 
-    public String build() {
-        var providerBuilder = new StringBuilder();
+    public int unicodeStart() {
+        return unicodeStart;
+    }
+
+    public void unicodeStart(int unicodeStart) {
+        this.unicodeStart = unicodeStart;
+    }
+
+    public String build(String output) {
+        final var providerBuilder = new StringBuilder();
+        var unicode = unicodeStart();
 
         for(var i = 0; i < providers().size(); i++) {
-            var provider = providers().get(i);
+            final var provider = providers().get(i);
             
-            providerBuilder.append(provider.build());
+            System.out.println(unicode - unicodeStart());
+            final var result = provider.build(output, unicode);
+            unicode += result.icons();
+
+            providerBuilder.append(result.output());
 
             if(i != providers().size()-1) {
                 providerBuilder.append(",\n");

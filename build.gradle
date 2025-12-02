@@ -15,8 +15,8 @@ repositories {
 
 dependencies {
     // https://mvnrepository.com/artifact/net.imagej/ij
-    implementation("net.imagej:ij:1.54p")
-    compileOnly("net.imagej:ij:1.54p")
+    // implementation("net.imagej:ij:1.54p")
+    // compileOnly("net.imagej:ij:1.54p")
 }
 
 tasks.withType(JavaCompile).configureEach {
