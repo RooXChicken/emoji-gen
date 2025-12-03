@@ -3,72 +3,87 @@ package org.loveroo.emojigen;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.loveroo.emojigen.providers.Provider;
 
+/**
+ * Creates a font file based on a set of providers
+ */
 public class Font {
-    
-    private static final String FONT_BASE = """
-    {
-        "providers": [
-    %s
-        ]
-    }
-    """;
-    
+
     private final List<Provider> providers = new ArrayList<>();
 
     private String name;
-    private int unicodeStart = 0xE000;
 
     public Font() {
         this("default");
     }
 
     public Font(String fontFile) {
-        fontFile(fontFile);
+        name(fontFile);
     }
 
+    /**
+     * Gets a mutable list of the providers
+     * @return The providers
+     */
     public List<Provider> providers() {
         return providers;
     }
 
+    /**
+     * Adds a provider to the list. Comparable to {@code Font#providers().add(...);}
+     * @param provider The provider to add
+     */
     public void addProvider(Provider provider) {
         providers().add(provider);
     }
 
+    /**
+     * Gets the name of the font. Used for the name of the font file (default: {@code default<.json>})
+     * @return The name
+     */
     public String name() {
         return name;
     }
 
-    public void fontFile(String fontFile) {
-        this.name = fontFile;
+    /**
+     * Sets the name of the font. See {@link Font#name()}
+     * @param name The new name
+     */
+    public void name(String name) {
+        this.name = name;
     }
 
-    public int unicodeStart() {
-        return unicodeStart;
-    }
-
-    public void unicodeStart(int unicodeStart) {
-        this.unicodeStart = unicodeStart;
-    }
-
+    /**
+     * Builds the font based on its providers
+     * @param output The root folder of the pack
+     * @return The font JSON
+     */
     public String build(String output) {
-        final var providerBuilder = new StringBuilder();
-        var unicode = unicodeStart();
+        final var json = new JSONObject();
+        final var providers = new JSONArray();
 
-        for(var i = 0; i < providers().size(); i++) {
-            final var provider = providers().get(i);
-            
-            final var result = provider.build(output, unicode);
-            unicode += result.icons();
-
-            providerBuilder.append(result.output());
-
-            if(i != providers().size()-1) {
-                providerBuilder.append(",\n");
+        for(var provider : providers()) {
+            try {
+                final var result = provider.build(output);
+                providers.put(result.output());
+            }
+            catch(Exception e) {
+                e.printStackTrace();
             }
         }
 
-        return String.format(FONT_BASE, providerBuilder);
+        try {
+            json.put("providers", providers);
+            
+            // needed becuase the JSON library force escapes backslashes even though that isn't what i want
+            return json.toString().replaceAll("__BACKSLASH__", "\\\\");
+        }
+        catch(Exception e) {
+            e.printStackTrace();
+            return "{}";
+        }
     }
 }

@@ -14,9 +14,9 @@ repositories {
 }
 
 dependencies {
-    // https://mvnrepository.com/artifact/net.imagej/ij
-    // implementation("net.imagej:ij:1.54p")
-    // compileOnly("net.imagej:ij:1.54p")
+    // https://mvnrepository.com/artifact/org.json/json
+    implementation 'org.json:json:20090211'
+    compileOnly 'org.json:json:20090211'
 }
 
 tasks.withType(JavaCompile).configureEach {

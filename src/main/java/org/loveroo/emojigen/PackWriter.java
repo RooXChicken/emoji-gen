@@ -4,8 +4,12 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.json.JSONObject;
 import org.loveroo.emojigen.util.FileUtil;
 
+/**
+ * Creates a resource pack from several {@link Font}s
+ */
 public class PackWriter {
     
     private static final String ASSET_PATH = "/assets/minecraft";
@@ -17,22 +21,13 @@ public class PackWriter {
 
     private static int PACK_VERSION = 64;
 
-    private static final String PACK_MCMETA = """
-    {
-        "pack": {
-            "pack_format": %s,
-            "description": "%s"
-        }
-    }
-    """;
-
     private String name;
     private String description;
 
     private final List<Font> fonts = new ArrayList<>();
 
     public PackWriter() {
-        this("pack", "emoji pack [ made with love by roo ]");
+        this("pack", "emoji pack\n[ made with love by roo ]");
     }
 
     public PackWriter(String name, String description) {
@@ -40,49 +35,73 @@ public class PackWriter {
         description(description);
     }
 
+    /**
+     * Gets the pack name. Controls what the root folder of the pack is.
+     * @return The name
+     */
     public String name() {
         return name;
     }
 
+    /**
+     * Sets the pack name
+     * @param name The new name
+     */
     public void name(String name) {
         this.name = name;
     }
 
+    /**
+     * Gets the pack description. Shows up in {@code pack.mcmeta}
+     * @return The description
+     */
     public String description() {
         return description;
     }
 
+    /**
+     * Sets the pack description
+     * @param description The new description
+     */
     public void description(String description) {
         this.description = description;
     }
 
+    /**
+     * Gets a mutable list of the fonts
+     * @return The fonts
+     */
     public List<Font> fonts() {
         return fonts;
     }
 
+    /**
+     * Adds a font to the list. Comparable to {@code PackWriter#fonts().add(...);}
+     * @param font
+     */
     public void addFont(Font font) {
         fonts().add(font);
     }
 
+    /**
+     * Builds the resource pack and saves it to ./{@link PackWriter#name()}
+     */
     public void build() {
         final var output = name();
 
-        var packFolder = new File(output);
+        final var packFolder = new File(output);
+        packFolder.delete();
         packFolder.mkdirs();
 
-        var fontFolder = new File(output + FONT_PATH);
+        final var fontFolder = new File(output + FONT_PATH);
         fontFolder.mkdirs();
 
-        var textureFolder = new File(output + TEXTURE_PATH);
+        final var textureFolder = new File(output + TEXTURE_PATH);
         textureFolder.mkdirs();
 
         FileUtil.writeString(
             new File(output + "/pack.mcmeta"),
-            String.format(
-                PACK_MCMETA,
-                PACK_VERSION,
-                description()
-            )
+            generateMCMeta()
         );
 
         for(var font : fonts()) {
@@ -95,6 +114,35 @@ public class PackWriter {
         }
     }
 
+    /**
+     * Generates the {@code pack.mcmeta} for this pack
+     * @return The JSON {@code pack.mcmeta}
+     */
+    private String generateMCMeta() {
+        try {
+            final var json = new JSONObject();
+    
+            final var packJson = new JSONObject();
+            packJson.put("pack_format", PACK_VERSION);
+            packJson.put("description", description());
+    
+            json.put("pack", packJson);
+    
+            return json.toString();
+        }
+        catch(Exception e) {
+            // exception handling is for losers
+            e.printStackTrace();
+            return "{}";
+        }
+    }
+
+    /**
+     * Helper function for getting the path a texture should output to
+     * @param output The pack root folder
+     * @param name The name of the texture
+     * @return The path where the texture should be saved
+     */
     public static String texturePath(String output, String name) {
         return (output + TEXTURE_PATH + "/" + name);
     }
