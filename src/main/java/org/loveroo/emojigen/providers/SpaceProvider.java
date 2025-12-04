@@ -28,10 +28,12 @@ public class SpaceProvider extends Provider {
 
     /**
      * Adds a space to the list. Comparable to {@code SpaceProvider#addSpace(...);}
-     * @param space
+     * @param space The space
+     * @return This
      */
-    public void addSpace(Space space) {
+    public SpaceProvider addSpace(Space space) {
         spaces().add(space);
+        return this;
     }
 
     @Override

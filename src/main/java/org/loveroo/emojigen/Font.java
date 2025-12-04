@@ -35,9 +35,11 @@ public class Font {
     /**
      * Adds a provider to the list. Comparable to {@code Font#providers().add(...);}
      * @param provider The provider to add
+     * @return This
      */
-    public void addProvider(Provider provider) {
+    public Font addProvider(Provider provider) {
         providers().add(provider);
+        return this;
     }
 
     /**
@@ -51,9 +53,11 @@ public class Font {
     /**
      * Sets the name of the font. See {@link Font#name()}
      * @param name The new name
+     * @return This
      */
-    public void name(String name) {
+    public Font name(String name) {
         this.name = name;
+        return this;
     }
 
     /**

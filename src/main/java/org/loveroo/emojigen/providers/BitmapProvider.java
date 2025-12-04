@@ -13,10 +13,10 @@ import java.util.regex.Pattern;
 
 import javax.imageio.ImageIO;
 
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.loveroo.emojigen.PackWriter;
 import org.loveroo.emojigen.data.Character;
+import org.loveroo.emojigen.data.Character.CharacterList;
 import org.loveroo.emojigen.util.Pair;
 
 /**
@@ -67,8 +67,9 @@ public class BitmapProvider extends Provider {
      * Sets the image path. See {@link BitmapProvider#imagePath()}
      * @param imagePath The new path
      */
-    public void imagePath(String imagePath) {
+    public BitmapProvider imagePath(String imagePath) {
         this.imagePath = imagePath;
+        return this;
     }
 
     /**
@@ -82,17 +83,21 @@ public class BitmapProvider extends Provider {
     /**
      * Sets the bitmap height. See {@link BitmapProvider#height()}
      * @param height The new height
+     * @return This
      */
-    public void height(Optional<Integer> height) {
+    public BitmapProvider height(Optional<Integer> height) {
         this.height = height;
+        return this;
     }
 
     /**
      * Sets the bitmap height. See {@link BitmapProvider#height()}
      * @param height The new height
+     * @return This
      */
-    public void height(int height) {
+    public BitmapProvider height(int height) {
         height(Optional.of(height));
+        return this;
     }
 
     /**
@@ -106,17 +111,21 @@ public class BitmapProvider extends Provider {
     /**
      * Sets the bitmap ascent. See {@link BitmapProvider#height()}
      * @param ascent The new ascent
+     * @return This
      */
-    public void ascent(Optional<Integer> ascent) {
+    public BitmapProvider ascent(Optional<Integer> ascent) {
         this.ascent = ascent;
+        return this;
     }
 
     /**
      * Sets the bitmap ascent. See {@link BitmapProvider#ascent()}
      * @param ascent The new ascent
+     * @return This
      */
-    public void ascent(int ascent) {
+    public BitmapProvider ascent(int ascent) {
         ascent(Optional.of(ascent));
+        return this;
     }
 
     /**
@@ -130,17 +139,21 @@ public class BitmapProvider extends Provider {
     /**
      * Sets the manual unicode start index. See {@link BitmapProvider#manualUnicode()}
      * @param manualUnicode The new manualUnicode
+     * @return This
      */
-    public void manualUnicode(Optional<Integer> manualUnicode) {
+    public BitmapProvider manualUnicode(Optional<Integer> manualUnicode) {
         this.manualUnicode = manualUnicode;
+        return this;
     }
 
     /**
      * Sets the manual unicode start index. See {@link BitmapProvider#manualUnicode()}
      * @param manualUnicode The new manualUnicode
+     * @return This
      */
-    public void manualUnicode(int manualUnicode) {
+    public BitmapProvider manualUnicode(int manualUnicode) {
         manualUnicode(Optional.of(manualUnicode));
+        return this;
     }
 
     @Override
@@ -158,10 +171,10 @@ public class BitmapProvider extends Provider {
         System.out.println(name() + " -> " + unicode);
         
         final var json = buildBase();
-        json.put("chars", buildBitmapChars(textureData));
+        json.put("chars", textureData.chars().build());
 
         if(manualUnicode().isEmpty()) {
-            unicodeValue += textureData.chars().size();
+            unicodeValue += textureData.chars().count();
         }
 
         final var height = height().orElse(textureData.height());
@@ -176,31 +189,6 @@ public class BitmapProvider extends Provider {
         json.put("ascent", ascent);
 
         return new BuildResult(json);
-    }
-
-    /**
-     * Builds the characters section of the provider
-     * @param data The texture data
-     * @return The array of characters
-     * @throws JSONException
-     */
-    protected JSONArray buildBitmapChars(TextureData data) throws JSONException {
-        final var json = new JSONArray();
-        
-        var charBuilder = new StringBuilder();
-
-        for(var i = 0; i < data.chars().size(); i++) {
-            final var character = data.chars().get(i);
-
-            charBuilder.append(character.build());
-            
-            if(i % data.megaDimensions() == data.megaDimensions() - 1) {
-                json.put(charBuilder.toString());
-                charBuilder = new StringBuilder();
-            }
-        }
-
-        return json;
     }
 
     /**
@@ -263,7 +251,7 @@ public class BitmapProvider extends Provider {
         }
 
         if(loaded.isEmpty()) {
-            return new TextureData(List.of(), 0, 0, 0);
+            return new TextureData(new CharacterList(), 0, 0, 0);
         }
 
         final var textureData = createMegaTexture(chars, loaded);
@@ -286,7 +274,7 @@ public class BitmapProvider extends Provider {
     /**
      * Texture data from built 
      */
-    public static record TextureData(List<Character> chars, int width, int height, int megaDimensions) { }
+    public static record TextureData(CharacterList chars, int width, int height, int megaDimensions) { }
 
     /**
      * See {@link BitmapProvider#createMegaTexture(ArrayList, List)}
@@ -359,6 +347,17 @@ public class BitmapProvider extends Provider {
 
         canvas.dispose();
 
-        return new Pair<>(mega, new TextureData(chars, imageWidth, imageHeight, megaDimensions));
+        final var charList = new CharacterList();
+        for(var i = 0; i < megaDimensions; i++) {
+            var list = new ArrayList<Character>();
+
+            for(var k = 0; k < megaDimensions; k++) {
+                list.add(chars.get(k + (i*megaDimensions)));
+            }
+
+            charList.addCharacters(list);
+        }
+
+        return new Pair<>(mega, new TextureData(charList, imageWidth, imageHeight, megaDimensions));
     }
 }

@@ -26,15 +26,15 @@ public class PackWriter {
 
     private final List<Font> fonts = new ArrayList<>();
 
-    public PackWriter() {
-        this("pack", "emoji pack\n[ made with love by roo ]");
-    }
-
     public PackWriter(String name, String description) {
         name(name);
         description(description);
     }
-
+    
+    public PackWriter() {
+        this("pack", "emoji pack\n[ made with love by roo ]");
+    }
+    
     /**
      * Gets the pack name. Controls what the root folder of the pack is.
      * @return The name
@@ -46,9 +46,11 @@ public class PackWriter {
     /**
      * Sets the pack name
      * @param name The new name
+     * @return This
      */
-    public void name(String name) {
+    public PackWriter name(String name) {
         this.name = name;
+        return this;
     }
 
     /**
@@ -62,9 +64,11 @@ public class PackWriter {
     /**
      * Sets the pack description
      * @param description The new description
+     * @return This
      */
-    public void description(String description) {
+    public PackWriter description(String description) {
         this.description = description;
+        return this;
     }
 
     /**
@@ -78,9 +82,11 @@ public class PackWriter {
     /**
      * Adds a font to the list. Comparable to {@code PackWriter#fonts().add(...);}
      * @param font
+     * @return This
      */
-    public void addFont(Font font) {
+    public PackWriter addFont(Font font) {
         fonts().add(font);
+        return this;
     }
 
     /**

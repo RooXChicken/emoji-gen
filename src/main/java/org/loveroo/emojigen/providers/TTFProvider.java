@@ -1,12 +1,12 @@
 package org.loveroo.emojigen.providers;
 
-import java.util.List;
+import java.util.HashMap;
 import java.util.Optional;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.loveroo.emojigen.data.Character;
+import org.loveroo.emojigen.data.Character.CharacterList;
 
 /**
  * Loads a TTF file
@@ -19,87 +19,90 @@ public class TTFProvider extends Provider {
     private Optional<Double> oversample = Optional.empty();
     private Optional<Shift> shift = Optional.empty();
 
-    private Optional<List<Character>> skip = Optional.empty();
+    private Optional<CharacterList> skip = Optional.empty();
     private Optional<Filter> filter = Optional.empty();
 
     public TTFProvider() {
-        super(ProviderType.SPACE);
+        super(ProviderType.TTF);
     }
 
     public String file() {
         return file;
     }
 
-    public void file(String file) {
+    public TTFProvider file(String file) {
         this.file = file;
+        return this;
     }
 
     public Optional<Double> size() {
         return size;
     }
 
-    public void size(double size) {
+    public TTFProvider size(double size) {
         size(Optional.of(size));
+        return this;
     }
 
-    public void size(Optional<Double> size) {
+    public TTFProvider size(Optional<Double> size) {
         this.size = size;
+        return this;
     }
 
     public Optional<Shift> shift() {
         return shift;
     }
 
-    public void shift(Shift shift) {
+    public TTFProvider shift(Shift shift) {
         shift(Optional.of(shift));
+        return this;
     }
 
-    public void shift(Optional<Shift> shift) {
+    public TTFProvider shift(Optional<Shift> shift) {
         this.shift = shift;
+        return this;
     }
 
     public Optional<Double> oversample() {
         return oversample;
     }
 
-    public void oversample(double oversample) {
+    public TTFProvider oversample(double oversample) {
         oversample(Optional.of(oversample));
+        return this;
     }
 
-    public void oversample(Optional<Double> oversample) {
+    public TTFProvider oversample(Optional<Double> oversample) {
         this.oversample = oversample;
+        return this;
     }
 
-    public Optional<List<Character>> skip() {
+    public Optional<CharacterList> skip() {
         return skip;
     }
 
-    public void skip(List<Character> skip) {
+    public TTFProvider skip(CharacterList skip) {
         skip(Optional.of(skip));
+        return this;
     }
 
-    public void skip(Optional<List<Character>> skip) {
+    public TTFProvider skip(Optional<CharacterList> skip) {
         this.skip = skip;
-    }
-
-    public void addSkip(Character character) {
-        if(skip().isEmpty()) {
-            return;
-        }
-        
-        skip().get().add(character);
+        return this;
     }
 
     public Optional<Filter> filter() {
         return filter;
     }
 
-    public void filter(Filter filter) {
+    public TTFProvider filter(Filter filter) {
         filter(Optional.of(filter));
+        return this;
     }
 
-    public void filter(Optional<Filter> filter) {
+    public TTFProvider filter(Optional<Filter> filter) {
         this.filter = filter;
+        return this;
     }
 
     @Override
@@ -120,20 +123,11 @@ public class TTFProvider extends Provider {
         }
 
         if(skip().isPresent()) {
-
+            json.put("skip", skip().get().build());
         }
 
         if(filter().isPresent()) {
-            final var filter = filter().get();
-            final var filterJson = new JSONObject();
-            
-            if(filter.uniform().isPresent()) {
-                filterJson.put("uniform", filter.uniform().get());
-            }
-
-            if(filter.jp().isPresent()) {
-                filterJson.put("jp", filter.jp().get());
-            }
+            json.put("filter", filter().get().build());
         }
 
         return new BuildResult(json);
@@ -153,31 +147,52 @@ public class TTFProvider extends Provider {
 
     public static class Filter {
 
-        private Optional<Boolean> uniform = Optional.empty();
-        private Optional<Boolean> jp = Optional.empty();
+        private final HashMap<FilterType, Optional<Boolean>> filters = new HashMap<>();
 
-        public Optional<Boolean> uniform() {
-            return uniform;
+        public Optional<Boolean> filter(FilterType type) {
+            return filters.getOrDefault(type, Optional.empty());
         }
 
-        public void uniform(boolean uniform) {
-            uniform(Optional.of(uniform));
+        public Filter filter(FilterType type, boolean value) {
+            filter(type, Optional.of(value));
+            return this;
         }
 
-        public void uniform(Optional<Boolean> uniform) {
-            this.uniform = uniform;
+        public Filter filter(FilterType type, Optional<Boolean> value) {
+            filters.put(type, value);
+            return this;
         }
 
-        public Optional<Boolean> jp() {
-            return jp;
-        }
+        public JSONObject build() throws JSONException {
+            final var json = new JSONObject();
 
-        public void jp(boolean jp) {
-            jp(Optional.of(jp));
-        }
+            for(var type : FilterType.values()) {
+                final var value = filter(type);
 
-        public void jp(Optional<Boolean> jp) {
-            this.jp = jp;
+                if(value.isEmpty()) {
+                    continue;
+                }
+
+                json.put(type.id(), value.get());
+            }
+
+            return json;
+        }
+        
+        public static enum FilterType {
+
+            UNIFORM("uniform"),
+            JP("jp");
+
+            private final String id;
+
+            FilterType(String id) {
+                this.id = id;
+            }
+
+            public String id() {
+                return id;
+            }
         }
     }
 }
